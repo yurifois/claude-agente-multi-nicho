@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mind Sculptor">
+  <title>Mind Sculptor</title>
+  <defs>
+    <linearGradient id="ms-ramp" x1="100%" y1="0%" x2="15%" y2="100%">
+      <stop offset="0%"   stop-color="#FFC24A"/>
+      <stop offset="30%"  stop-color="#FFA51C"/>
+      <stop offset="65%"  stop-color="#FF7A1A"/>
+      <stop offset="100%" stop-color="#F04310"/>
+    </linearGradient>
+    <linearGradient id="ms-ramp-piece" x1="0%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%"   stop-color="#FFD489"/>
+      <stop offset="55%"  stop-color="#FFB020"/>
+      <stop offset="100%" stop-color="#FF8A1A"/>
+    </linearGradient>
+
+    <!-- silhueta de perfil: rosto à esquerda, nuca à direita -->
+    <path id="ms-head" d="
+      M300 78
+      C235 78 185 120 172 178
+      C168 196 160 205 150 218
+      C140 232 128 250 124 262
+      C120 272 126 276 134 279
+      C142 282 148 284 150 292
+      C152 300 148 306 152 312
+      C156 320 168 326 176 334
+      C186 344 196 356 212 362
+      C230 368 260 372 290 372
+      L396 372
+      C400 320 396 280 400 240
+      C404 180 380 100 300 78 Z"/>
+
+    <clipPath id="ms-clip"><use href="#ms-head"/></clipPath>
+  </defs>
+
+  <!-- corpo da cabeça -->
+  <use href="#ms-head" fill="url(#ms-ramp)"/>
+
+  <!-- cortes de quebra-cabeça, recortados na silhueta -->
+  <g clip-path="url(#ms-clip)" fill="none" stroke="#000" stroke-width="11"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M120 225 L245 225 C245 203 297 203 297 225 L410 225"/>
+    <path d="M297 60 L297 140 C322 140 322 192 297 192 L297 225"/>
+    <path d="M150 302 L252 302 C252 326 304 326 304 302 L410 302"/>
+    <path d="M252 225 L252 246 C228 246 228 290 252 290 L252 390"/>
+  </g>
+
+  <!-- peça solta: a ideia que ainda vai se encaixar -->
+  <path d="
+    M392 112 L424 112 C424 90 460 90 460 112 L492 112
+    L492 146 C514 146 514 182 492 182 L492 214
+    L392 214 L392 182 C370 182 370 146 392 146 Z"
+    fill="url(#ms-ramp-piece)" stroke="#000" stroke-width="9" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,47 @@
+# dependências
+node_modules/
+.pnp
+.pnp.js
+
+# build
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# ambiente — nunca versionar credencial
+.env
+.env.*
+!.env.example
+
+# banco local
+*.db
+*.db-journal
+prisma/dev.db*
+
+# logs
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# testes e cobertura
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+tests/simulador/relatorios/
+
+# editor e sistema
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# python do gerador de docs
+__pycache__/
+*.pyc
+.venv/
+venv/

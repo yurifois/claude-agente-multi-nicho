@@ -1,0 +1,163 @@
+/* ============================================================
+   Mind Sculptor — tokens de marca
+   Rampa extraída da logo: âmbar → laranja → vermelho sobre preto.
+   ============================================================ */
+
+:root {
+  /* --- Rampa da marca (crua, não use direto em componentes) --- */
+  --brand-50:  #FFF6E8;
+  --brand-100: #FFE7C2;
+  --brand-200: #FFD489;
+  --brand-300: #FFC24A;  /* brilho superior das peças */
+  --brand-400: #FFA51C;  /* âmbar — peças do topo */
+  --brand-500: #FF7A1A;  /* laranja — cor-núcleo da marca */
+  --brand-600: #F04310;  /* vermelho-laranja — base e rosto */
+  --brand-700: #C42D08;  /* sombra das peças */
+  --brand-800: #8F1F04;
+  --brand-900: #5A1302;
+
+  --ink-950: #000000;    /* o preto da logo */
+  --ink-900: #0A0806;
+  --ink-850: #131009;
+  --ink-800: #1C1710;
+
+  /* --- Tema claro (padrão) --- */
+  --color-background:    #FFFFFF;
+  --color-surface:       #FFFAF4;
+  --color-surface-raised:#FFFFFF;
+  --color-muted:         #FFF2E4;
+  --color-border:        #F2DFC9;
+  --color-border-strong: #E4C6A6;
+
+  --color-foreground:    #1A1310;
+  --color-foreground-dim:#6B5A4E;
+
+  /* Laranja puro reprova contraste em branco, então o tema claro usa
+     a ponta profunda da mesma rampa para tudo que carrega texto. */
+  --color-primary:       #C42D08;  /* 6.3:1 em branco */
+  --color-primary-hover: #A82505;
+  --color-primary-fill:  #D8380C;  /* fundo de botão, branco por cima: 5.2:1 */
+  --color-on-primary:    #FFFFFF;
+
+  /* Só para superfícies sem texto: ícones, bordas, séries de gráfico. */
+  --color-accent:        #FF7A1A;
+  --color-accent-soft:   #FFE7C2;
+
+  --color-success:       #1B7A3D;
+  --color-warning:       #B45309;
+  --color-destructive:   #C42D08;
+  --color-ring:          #FF7A1A;
+
+  --color-glow: transparent;       /* o brilho da logo só existe no escuro */
+
+  /* --- Fundações compartilhadas --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+
+  --font-ui:   "Fira Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --z-base: 0; --z-sticky: 10; --z-dropdown: 20; --z-overlay: 40;
+  --z-modal: 100; --z-toast: 1000;
+}
+
+/* ============================================================
+   Tema escuro — o habitat nativo da marca.
+   Preto puro, laranja em brasa. É a logo virando interface.
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-background:    #000000;
+    --color-surface:       #0A0806;
+    --color-surface-raised:#131009;
+    --color-muted:         #1C1710;
+    --color-border:        #2C231A;
+    --color-border-strong: #43342444;
+
+    --color-foreground:    #F7EFE6;
+    --color-foreground-dim:#A6968A;
+
+    --color-primary:       #FF8A2B;  /* 8.1:1 em preto */
+    --color-primary-hover: #FFA51C;
+    --color-primary-fill:  #F04310;
+    --color-on-primary:    #FFFFFF;
+
+    --color-accent:        #FFA51C;
+    --color-accent-soft:   #2A1B0C;
+
+    --color-success:       #4ADE80;
+    --color-warning:       #FBBF24;
+    --color-destructive:   #FF5A3C;
+    --color-ring:          #FFA51C;
+
+    --color-glow: #FFC24A;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-background:    #000000;
+  --color-surface:       #0A0806;
+  --color-surface-raised:#131009;
+  --color-muted:         #1C1710;
+  --color-border:        #2C231A;
+  --color-border-strong: #433424;
+
+  --color-foreground:    #F7EFE6;
+  --color-foreground-dim:#A6968A;
+
+  --color-primary:       #FF8A2B;
+  --color-primary-hover: #FFA51C;
+  --color-primary-fill:  #F04310;
+  --color-on-primary:    #FFFFFF;
+
+  --color-accent:        #FFA51C;
+  --color-accent-soft:   #2A1B0C;
+
+  --color-success:       #4ADE80;
+  --color-warning:       #FBBF24;
+  --color-destructive:   #FF5A3C;
+  --color-ring:          #FFA51C;
+
+  --color-glow: #FFC24A;
+}
+
+/* ============================================================
+   Séries de gráfico — derivadas da rampa, distinguíveis entre si
+   em ambos os temas. Nunca use só cor: acompanhe de forma ou rótulo.
+   ============================================================ */
+:root {
+  --chart-1: #FF7A1A;
+  --chart-2: #FFA51C;
+  --chart-3: #C42D08;
+  --chart-4: #7C5CFF;  /* contraponto frio para séries adjacentes */
+  --chart-5: #0E9F6E;
+  --chart-6: #FFC24A;
+}
+
+/* Gradiente da marca — use com parcimônia: logo, faixa de topo, estados vazios. */
+.brand-gradient {
+  background-image: linear-gradient(135deg,
+    var(--brand-300) 0%, var(--brand-400) 28%,
+    var(--brand-500) 62%, var(--brand-600) 100%);
+}
+
+.brand-text-gradient {
+  background-image: linear-gradient(180deg, var(--brand-400) 0%, var(--brand-600) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+}

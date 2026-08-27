@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agente Multi-Nicho — Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Mind Sculptor — tokens de marca
+   Rampa extraída da logo: âmbar → laranja → vermelho sobre preto.
+   ============================================================ */
+
+:root {
+  /* --- Rampa da marca (crua, não use direto em componentes) --- */
+  --brand-50:  #FFF6E8;
+  --brand-100: #FFE7C2;
+  --brand-200: #FFD489;
+  --brand-300: #FFC24A;  /* brilho superior das peças */
+  --brand-400: #FFA51C;  /* âmbar — peças do topo */
+  --brand-500: #FF7A1A;  /* laranja — cor-núcleo da marca */
+  --brand-600: #F04310;  /* vermelho-laranja — base e rosto */
+  --brand-700: #C42D08;  /* sombra das peças */
+  --brand-800: #8F1F04;
+  --brand-900: #5A1302;
+
+  --ink-950: #000000;    /* o preto da logo */
+  --ink-900: #0A0806;
+  --ink-850: #131009;
+  --ink-800: #1C1710;
+
+  /* --- Tema claro (padrão) --- */
+  --color-background:    #FFFFFF;
+  --color-surface:       #FFFAF4;
+  --color-surface-raised:#FFFFFF;
+  --color-muted:         #FFF2E4;
+  --color-border:        #F2DFC9;
+  --color-border-strong: #E4C6A6;
+
+  --color-foreground:    #1A1310;
+  --color-foreground-dim:#6B5A4E;
+
+  /* Laranja puro reprova contraste em branco, então o tema claro usa
+     a ponta profunda da mesma rampa para tudo que carrega texto. */
+  --color-primary:       #C42D08;  /* 6.3:1 em branco */
+  --color-primary-hover: #A82505;
+  --color-primary-fill:  #D8380C;  /* fundo de botão, branco por cima: 5.2:1 */
+  --color-on-primary:    #FFFFFF;
+
+  /* Só para superfícies sem texto: ícones, bordas, séries de gráfico. */
+  --color-accent:        #FF7A1A;
+  --color-accent-soft:   #FFE7C2;
+
+  --color-success:       #1B7A3D;
+  --color-warning:       #B45309;
+  --color-destructive:   #C42D08;
+  --color-ring:          #FF7A1A;
+
+  --color-glow: transparent;       /* o brilho da logo só existe no escuro */
+
+  /* --- Fundações compartilhadas --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+
+  --font-ui:   "Fira Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --z-base: 0; --z-sticky: 10; --z-dropdown: 20; --z-overlay: 40;
+  --z-modal: 100; --z-toast: 1000;
+}
+
+/* ============================================================
+   Tema escuro — o habitat nativo da marca.
+   Preto puro, laranja em brasa. É a logo virando interface.
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-background:    #000000;
+    --color-surface:       #0A0806;
+    --color-surface-raised:#131009;
+    --color-muted:         #1C1710;
+    --color-border:        #2C231A;
+    --color-border-strong: #43342444;
+
+    --color-foreground:    #F7EFE6;
+    --color-foreground-dim:#A6968A;
+
+    --color-primary:       #FF8A2B;  /* 8.1:1 em preto */
+    --color-primary-hover: #FFA51C;
+    --color-primary-fill:  #F04310;
+    --color-on-primary:    #FFFFFF;
+
+    --color-accent:        #FFA51C;
+    --color-accent-soft:   #2A1B0C;
+
+    --color-success:       #4ADE80;
+    --color-warning:       #FBBF24;
+    --color-destructive:   #FF5A3C;
+    --color-ring:          #FFA51C;
+
+    --color-glow: #FFC24A;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-background:    #000000;
+  --color-surface:       #0A0806;
+  --color-surface-raised:#131009;
+  --color-muted:         #1C1710;
+  --color-border:        #2C231A;
+  --color-border-strong: #433424;
+
+  --color-foreground:    #F7EFE6;
+  --color-foreground-dim:#A6968A;
+
+  --color-primary:       #FF8A2B;
+  --color-primary-hover: #FFA51C;
+  --color-primary-fill:  #F04310;
+  --color-on-primary:    #FFFFFF;
+
+  --color-accent:        #FFA51C;
+  --color-accent-soft:   #2A1B0C;
+
+  --color-success:       #4ADE80;
+  --color-warning:       #FBBF24;
+  --color-destructive:   #FF5A3C;
+  --color-ring:          #FFA51C;
+
+  --color-glow: #FFC24A;
+}
+
+/* ============================================================
+   Séries de gráfico — derivadas da rampa, distinguíveis entre si
+   em ambos os temas. Nunca use só cor: acompanhe de forma ou rótulo.
+   ============================================================ */
+:root {
+  --chart-1: #FF7A1A;
+  --chart-2: #FFA51C;
+  --chart-3: #C42D08;
+  --chart-4: #7C5CFF;  /* contraponto frio para séries adjacentes */
+  --chart-5: #0E9F6E;
+  --chart-6: #FFC24A;
+}
+
+/* Gradiente da marca — use com parcimônia: logo, faixa de topo, estados vazios. */
+.brand-gradient {
+  background-image: linear-gradient(135deg,
+    var(--brand-300) 0%, var(--brand-400) 28%,
+    var(--brand-500) 62%, var(--brand-600) 100%);
+}
+
+.brand-text-gradient {
+  background-image: linear-gradient(180deg, var(--brand-400) 0%, var(--brand-600) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+}
+
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--color-background); color:var(--color-foreground);
+  font-family:var(--font-ui); font-size:16px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.shell{display:grid; grid-template-columns:286px minmax(0,1fr); min-height:100dvh}
+nav{
+  border-right:1px solid var(--color-border); background:var(--color-surface);
+  padding:22px 16px; position:sticky; top:0; height:100dvh; overflow-y:auto;
+}
+.logo{display:flex; align-items:center; gap:11px; margin-bottom:22px;
+  padding:0 6px; text-decoration:none}
+.logo svg{width:38px; height:38px; flex:none}
+.logo .name{font-weight:700; font-size:14px; letter-spacing:.02em;
+  line-height:1.15; color:var(--color-foreground)}
+.logo .name span{display:block; font-weight:400; font-size:11px;
+  color:var(--color-foreground-dim); font-family:var(--font-mono);
+  letter-spacing:0; margin-top:2px}
+nav a.sec{
+  display:block; padding:7px 10px; margin:1px 0; border-radius:var(--radius-sm);
+  color:var(--color-foreground-dim); text-decoration:none; font-size:13.5px;
+  border-left:2px solid transparent;
+  transition:background var(--dur-fast) var(--ease-out),
+             color var(--dur-fast) var(--ease-out);
+}
+nav a.sec:hover{background:var(--color-muted); color:var(--color-foreground)}
+nav a.sec.active{color:var(--color-primary); border-left-color:var(--color-accent);
+  background:var(--color-muted)}
+nav a.lvl3{padding-left:24px; font-size:12.5px}
+:focus-visible{outline:2px solid var(--color-ring); outline-offset:2px; border-radius:3px}
+main{padding:54px 46px 120px; max-width:940px}
+h1{font-size:35px; line-height:1.18; letter-spacing:-.022em; margin:0 0 10px}
+h2{font-size:23px; letter-spacing:-.012em; margin:56px 0 14px;
+  padding-bottom:9px; border-bottom:1px solid var(--color-border)}
+h3{font-size:17px; margin:32px 0 10px}
+strong{font-weight:600}
+hr{border:0; border-top:1px solid var(--color-border); margin:44px 0}
+a{color:var(--color-primary)}
+table{border-collapse:collapse; width:100%; margin:18px 0; font-size:14px;
+  font-variant-numeric:tabular-nums}
+thead th{background:var(--color-muted); text-align:left; font-weight:600;
+  font-size:11.5px; text-transform:uppercase; letter-spacing:.055em;
+  color:var(--color-foreground-dim)}
+th,td{border:1px solid var(--color-border); padding:9px 12px; vertical-align:top}
+tbody tr{transition:background var(--dur-fast) var(--ease-out)}
+tbody tr:hover{background:var(--color-muted)}
+code{font-family:var(--font-mono); font-size:.88em; background:var(--color-muted);
+  border:1px solid var(--color-border); border-radius:4px; padding:1px 5px}
+pre{background:var(--color-surface); border:1px solid var(--color-border);
+  border-radius:var(--radius-md); padding:16px 18px; overflow-x:auto;
+  font-size:13px; line-height:1.55}
+pre code{background:none; border:0; padding:0}
+blockquote{margin:18px 0; padding:2px 18px;
+  border-left:3px solid var(--color-accent); color:var(--color-foreground-dim)}
+.meta{display:inline-flex; gap:9px; align-items:center; font-family:var(--font-mono);
+  font-size:12px; color:var(--color-foreground-dim);
+  border:1px solid var(--color-border); background:var(--color-muted);
+  border-radius:var(--radius-pill); padding:4px 13px; margin-bottom:26px}
+.toolbar{position:fixed; top:14px; right:18px; display:flex; gap:8px; z-index:var(--z-sticky)}
+.toolbar a,.toolbar button{
+  display:inline-flex; align-items:center; min-height:38px; padding:0 15px;
+  border-radius:var(--radius-md); cursor:pointer; text-decoration:none;
+  border:1px solid var(--color-border); background:var(--color-surface-raised);
+  color:var(--color-foreground); font-family:inherit; font-size:13px;
+  transition:background var(--dur-fast) var(--ease-out),
+             border-color var(--dur-fast) var(--ease-out);
+}
+.toolbar a:hover,.toolbar button:hover{
+  background:var(--color-muted); border-color:var(--color-border-strong)}
+
+/* --- pagina de marca --- */
+.hero{display:flex; align-items:center; gap:26px; padding:38px 34px; margin-bottom:8px;
+  border:1px solid var(--color-border); border-radius:var(--radius-lg);
+  background:var(--color-surface)}
+.hero svg{width:104px; height:104px; flex:none}
+.hero h1{margin:0}
+.swatches{display:grid; gap:12px; margin:20px 0 8px;
+  grid-template-columns:repeat(auto-fill,minmax(158px,1fr))}
+.sw{border:1px solid var(--color-border); border-radius:var(--radius-md); overflow:hidden}
+.sw .chip{height:76px}
+.sw .lab{padding:9px 11px; font-family:var(--font-mono); font-size:11.5px;
+  background:var(--color-surface); border-top:1px solid var(--color-border)}
+.sw .lab b{display:block; font-family:var(--font-ui); font-size:12.5px;
+  font-weight:600; margin-bottom:3px; letter-spacing:.01em}
+.sw .lab span{color:var(--color-foreground-dim)}
+.demo{display:flex; flex-wrap:wrap; gap:11px; align-items:center; margin:18px 0}
+.btn{min-height:42px; padding:0 20px; border-radius:var(--radius-md); border:0;
+  background:var(--color-primary-fill); color:var(--color-on-primary);
+  font-family:inherit; font-size:14px; font-weight:500; cursor:pointer;
+  display:inline-flex; align-items:center;
+  transition:filter var(--dur-fast) var(--ease-out)}
+.btn:hover{filter:brightness(1.09)}
+.btn.ghost{background:transparent; color:var(--color-primary);
+  border:1px solid var(--color-border-strong)}
+.btn.ghost:hover{background:var(--color-muted)}
+.pill{display:inline-flex; align-items:center; gap:6px; padding:4px 12px;
+  border-radius:var(--radius-pill); font-size:12.5px; font-weight:500;
+  background:var(--color-accent-soft); color:var(--color-primary);
+  border:1px solid var(--color-border-strong)}
+.note{border-left:3px solid var(--color-accent); background:var(--color-muted);
+  padding:13px 17px; border-radius:0 var(--radius-md) var(--radius-md) 0; margin:18px 0;
+  font-size:14.5px}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  nav{position:static; height:auto; border-right:0;
+    border-bottom:1px solid var(--color-border)}
+  main{padding:26px 18px 80px}
+  h1{font-size:27px}
+  .hero{flex-direction:column; text-align:center; padding:26px 18px}
+  .toolbar{position:static; padding:12px 18px 0; justify-content:flex-end}
+}
+
+</style>
+</head>
+<body>
+<div class="toolbar"><a href="brand.html">Marca</a>
+  <button id="theme" aria-label="Alternar tema claro e escuro">Tema</button></div>
+<div class="shell">
+  <nav aria-label="Sumario">
+    <a class="logo" href="spec.html">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Mind Sculptor">
+  <title>Mind Sculptor</title>
+  <defs>
+    <linearGradient id="ms-ramp" x1="100%" y1="0%" x2="15%" y2="100%">
+      <stop offset="0%"   stop-color="#FFC24A"/>
+      <stop offset="30%"  stop-color="#FFA51C"/>
+      <stop offset="65%"  stop-color="#FF7A1A"/>
+      <stop offset="100%" stop-color="#F04310"/>
+    </linearGradient>
+    <linearGradient id="ms-ramp-piece" x1="0%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%"   stop-color="#FFD489"/>
+      <stop offset="55%"  stop-color="#FFB020"/>
+      <stop offset="100%" stop-color="#FF8A1A"/>
+    </linearGradient>
+
+    <!-- silhueta de perfil: rosto à esquerda, nuca à direita -->
+    <path id="ms-head" d="
+      M300 78
+      C235 78 185 120 172 178
+      C168 196 160 205 150 218
+      C140 232 128 250 124 262
+      C120 272 126 276 134 279
+      C142 282 148 284 150 292
+      C152 300 148 306 152 312
+      C156 320 168 326 176 334
+      C186 344 196 356 212 362
+      C230 368 260 372 290 372
+      L396 372
+      C400 320 396 280 400 240
+      C404 180 380 100 300 78 Z"/>
+
+    <clipPath id="ms-clip"><use href="#ms-head"/></clipPath>
+  </defs>
+
+  <!-- corpo da cabeça -->
+  <use href="#ms-head" fill="url(#ms-ramp)"/>
+
+  <!-- cortes de quebra-cabeça, recortados na silhueta -->
+  <g clip-path="url(#ms-clip)" fill="none" stroke="#000" stroke-width="11"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M120 225 L245 225 C245 203 297 203 297 225 L410 225"/>
+    <path d="M297 60 L297 140 C322 140 322 192 297 192 L297 225"/>
+    <path d="M150 302 L252 302 C252 326 304 326 304 302 L410 302"/>
+    <path d="M252 225 L252 246 C228 246 228 290 252 290 L252 390"/>
+  </g>
+
+  <!-- peça solta: a ideia que ainda vai se encaixar -->
+  <path d="
+    M392 112 L424 112 C424 90 460 90 460 112 L492 112
+    L492 146 C514 146 514 182 492 182 L492 214
+    L392 214 L392 182 C370 182 370 146 392 146 Z"
+    fill="url(#ms-ramp-piece)" stroke="#000" stroke-width="9" stroke-linejoin="round"/>
+</svg>
+      <span class="name">MIND SCULPTOR<span>agente multi-nicho</span></span>
+    </a>
+    <a class="sec" href="#1-objetivo">1. Objetivo</a>
+    <a class="sec lvl3" href="#critérios-de-sucesso">Critérios de sucesso</a>
+    <a class="sec" href="#2-fundamento-conceitual">2. Fundamento conceitual</a>
+    <a class="sec lvl3" href="#2-1-os-quatro-pilares">2.1 Os quatro pilares</a>
+    <a class="sec lvl3" href="#2-2-agente-vs-automação-linear">2.2 Agente vs. automação linear</a>
+    <a class="sec" href="#3-arquitetura">3. Arquitetura</a>
+    <a class="sec lvl3" href="#3-1-stack">3.1 Stack</a>
+    <a class="sec lvl3" href="#3-2-estrutura-de-diretórios">3.2 Estrutura de diretórios</a>
+    <a class="sec lvl3" href="#3-3-isolamento-de-unidades">3.3 Isolamento de unidades</a>
+    <a class="sec" href="#4-multi-tenancy">4. Multi-tenancy</a>
+    <a class="sec lvl3" href="#4-1-modelo">4.1 Modelo</a>
+    <a class="sec lvl3" href="#4-2-isolamento">4.2 Isolamento</a>
+    <a class="sec lvl3" href="#4-3-segredos">4.3 Segredos</a>
+    <a class="sec" href="#5-configuração-de-nicho">5. Configuração de nicho</a>
+    <a class="sec lvl3" href="#5-1-nichos-de-exemplo-entregues">5.1 Nichos de exemplo entregues</a>
+    <a class="sec" href="#6-o-agente">6. O agente</a>
+    <a class="sec lvl3" href="#6-1-ciclo-de-uma-mensagem">6.1 Ciclo de uma mensagem</a>
+    <a class="sec lvl3" href="#6-2-prompt">6.2 Prompt</a>
+    <a class="sec lvl3" href="#6-3-ferramentas">6.3 Ferramentas</a>
+    <a class="sec lvl3" href="#6-4-guardrails">6.4 Guardrails</a>
+    <a class="sec lvl3" href="#6-5-memória">6.5 Memória</a>
+    <a class="sec" href="#7-canais">7. Canais</a>
+    <a class="sec lvl3" href="#7-1-adaptador">7.1 Adaptador</a>
+    <a class="sec lvl3" href="#7-2-janela-de-24h">7.2 Janela de 24h</a>
+    <a class="sec lvl3" href="#7-3-templates">7.3 Templates</a>
+    <a class="sec" href="#8-painel-do-dono">8. Painel do Dono</a>
+    <a class="sec lvl3" href="#8-1-abas">8.1 Abas</a>
+    <a class="sec lvl3" href="#8-2-área-de-super-admin">8.2 Área de super-admin</a>
+    <a class="sec lvl3" href="#8-3-sistema-visual">8.3 Sistema visual</a>
+    <a class="sec lvl3" href="#8-4-pwa">8.4 PWA</a>
+    <a class="sec" href="#9-campanhas-e-disparo-em-massa">9. Campanhas e disparo em massa</a>
+    <a class="sec lvl3" href="#9-1-motor">9.1 Motor</a>
+    <a class="sec lvl3" href="#9-2-risco-por-driver">9.2 Risco por driver</a>
+    <a class="sec" href="#10-cobrança">10. Cobrança</a>
+    <a class="sec lvl3" href="#10-1-assinatura-da-plataforma">10.1 Assinatura da plataforma</a>
+    <a class="sec lvl3" href="#10-2-link-de-pagamento-na-conversa">10.2 Link de pagamento na conversa</a>
+    <a class="sec" href="#11-testes">11. Testes</a>
+    <a class="sec lvl3" href="#11-1-simulador-agente-contra-agente">11.1 Simulador agente-contra-agente</a>
+    <a class="sec lvl3" href="#11-2-demais-níveis">11.2 Demais níveis</a>
+    <a class="sec" href="#12-erros-e-observabilidade">12. Erros e observabilidade</a>
+    <a class="sec" href="#13-fora-de-escopo">13. Fora de escopo</a>
+    <a class="sec" href="#14-decomposição-em-fases">14. Decomposição em fases</a>
+    <a class="sec lvl3" href="#fase-1-fundação-e-cérebro-do-agente">Fase 1 — Fundação e cérebro do agente</a>
+    <a class="sec lvl3" href="#fase-2-canal-e-conversas-reais">Fase 2 — Canal e conversas reais</a>
+    <a class="sec lvl3" href="#fase-3-painel-do-dono-núcleo">Fase 3 — Painel do Dono, núcleo</a>
+    <a class="sec lvl3" href="#fase-4-crm-e-funil">Fase 4 — CRM e funil</a>
+    <a class="sec lvl3" href="#fase-5-simulador-e-endurecimento">Fase 5 — Simulador e endurecimento</a>
+    <a class="sec lvl3" href="#fase-6-driver-meta-templates-e-janela-de-24h">Fase 6 — Driver Meta, templates e janela de 24h</a>
+    <a class="sec lvl3" href="#fase-7-campanhas">Fase 7 — Campanhas</a>
+    <a class="sec lvl3" href="#fase-8-cobrança">Fase 8 — Cobrança</a>
+    <a class="sec lvl3" href="#fase-9-pwa">Fase 9 — PWA</a>
+    <a class="sec lvl3" href="#dependências">Dependências</a>
+  </nav>
+  <main><h1>Agente de Atendimento Multi-Nicho — Design</h1>
+<p><strong>Data:</strong> 2026-08-27
+<strong>Status:</strong> aguardando revisão do usuário
+<strong>Origem:</strong> arquitetura destilada do vídeo <em>"Como criei o MELHOR Agente de IA pra WhatsApp do Brasil"</em> (transcrição em <code>docs/transcricao-video.txt</code>), generalizada para qualquer nicho.</p>
+<hr />
+<h2 id="1-objetivo">1. Objetivo</h2>
+<p>Construir uma plataforma SaaS multi-tenant onde qualquer empresa — clínica, pet shop, escritório de advocacia, oficina, academia — sobe um agente de IA de atendimento por WhatsApp <strong>sem escrever código</strong>, e o dono opera tudo por um painel web instalável.</p>
+<p>O que o vídeo entrega para uma clínica de estética, esta plataforma entrega para qualquer nicho, com multi-tenancy, cobrança, campanhas e templates oficiais da Meta por cima.</p>
+<h3 id="critérios-de-sucesso">Critérios de sucesso</h3>
+<ol>
+<li>Um novo nicho entra em produção editando apenas configuração — zero alteração de código.</li>
+<li>O agente nunca cita preço, prazo ou promoção que não exista no catálogo do tenant.</li>
+<li>O dono assume e devolve qualquer conversa ao agente sem perder contexto.</li>
+<li>O simulador agente-contra-agente atinge 0 violações em 100 conversas antes do go-live.</li>
+<li>Um tenant jamais lê ou escreve dado de outro tenant.</li>
+</ol>
+<hr />
+<h2 id="2-fundamento-conceitual">2. Fundamento conceitual</h2>
+<h3 id="2-1-os-quatro-pilares">2.1 Os quatro pilares</h3>
+<p>O vídeo define quatro pilares sem os quais não existe agente. Esta é a espinha do sistema:</p>
+<table>
+<thead>
+<tr>
+<th>Pilar</th>
+<th>Papel</th>
+<th>Onde vive</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Modelo de IA</strong></td>
+<td>Escolhe quais ferramentas usar e redige a resposta</td>
+<td><code>core/providers/llm/</code></td>
+</tr>
+<tr>
+<td><strong>Prompt</strong></td>
+<td>Objetivo · Ferramentas · Como agir · O que nunca fazer</td>
+<td><code>core/agent/prompt.ts</code></td>
+</tr>
+<tr>
+<td><strong>Ferramentas</strong></td>
+<td>Código autônomo que age no mundo</td>
+<td><code>core/tools/</code></td>
+</tr>
+<tr>
+<td><strong>Memória</strong></td>
+<td>Últimas N mensagens por contato</td>
+<td><code>core/agent/memory.ts</code></td>
+</tr>
+</tbody>
+</table>
+<p>Sem ferramentas não é agente — é um modelo redigindo texto. Sem memória, cada mensagem reinicia a conversa. Sem base de conhecimento, o modelo inventa.</p>
+<h3 id="2-2-agente-vs-automação-linear">2.2 Agente vs. automação linear</h3>
+<p>Automação linear segue trilho fixo, aceita entrada previsível (formulário), custa zero e não erra de caminho. Agente escolhe o caminho mensagem a mensagem e serve entrada imprevisível — texto torto, áudio, foto.</p>
+<p><strong>Regra de projeto:</strong> todo fluxo determinístico do sistema (sincronizar planilha, enviar lembrete, cobrar assinatura, disparar campanha) é automação linear em job agendado. O modelo de IA só é invocado no ponto onde a entrada é uma pessoa falando. Isso corta custo e elimina margem de erro onde ela não precisa existir.</p>
+<hr />
+<h2 id="3-arquitetura">3. Arquitetura</h2>
+<h3 id="3-1-stack">3.1 Stack</h3>
+<table>
+<thead>
+<tr>
+<th>Camada</th>
+<th>Escolha</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App + painel</td>
+<td>Next.js 15 (App Router) + TypeScript</td>
+</tr>
+<tr>
+<td>UI</td>
+<td>Tailwind + shadcn/ui, tokens semânticos por tenant</td>
+</tr>
+<tr>
+<td>Banco</td>
+<td>PostgreSQL + Prisma</td>
+</tr>
+<tr>
+<td>Fila e agendamento</td>
+<td>pg-boss (dentro do Postgres, sem Redis)</td>
+</tr>
+<tr>
+<td>LLM</td>
+<td>Claude Sonnet 5 (padrão) · Gemini (alternativo)</td>
+</tr>
+<tr>
+<td>Transcrição</td>
+<td>Whisper (OpenAI/Groq) · Gemini como alternativa</td>
+</tr>
+<tr>
+<td>Canal</td>
+<td>Adaptador plugável: Evolution API (padrão) · Meta Cloud API</td>
+</tr>
+<tr>
+<td>Pagamento</td>
+<td>Asaas (PIX, boleto, cartão, assinatura)</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>Auth.js — e-mail com magic link + credenciais</td>
+</tr>
+</tbody>
+</table>
+<p>Dois processos, um repositório: <code>web</code> (Next.js) e <code>worker</code> (pg-boss), compartilhando <code>src/core</code> e o mesmo Prisma Client.</p>
+<h3 id="3-2-estrutura-de-diretórios">3.2 Estrutura de diretórios</h3>
+<pre><code>agente-atendimento/
+├── docker-compose.yml           postgres + evolution api (dev)
+├── prisma/schema.prisma
+├── config/nichos/               seeds versionados em arquivo
+│   ├── _template/               esqueleto para clonar
+│   ├── clinica-estetica/        reprodução do caso do vídeo
+│   ├── petshop/                 prova de genericidade
+│   └── advocacia/               nicho sem agenda, prova ferramentas opcionais
+├── src/
+│   ├── core/                    engine — não conhece Next.js
+│   │   ├── tenant/              resolver · config-loader · criptografia
+│   │   ├── agent/               loop · prompt · memory · guardrails
+│   │   ├── providers/
+│   │   │   ├── llm/             interface · anthropic · gemini
+│   │   │   ├── stt/             interface · whisper · gemini
+│   │   │   └── payment/         interface · asaas
+│   │   ├── channel/             interface · evolution · meta
+│   │   ├── tools/               registry + implementações
+│   │   ├── inbox/               normalizador · debounce
+│   │   ├── campaigns/           segmentação · throttle · opt-out
+│   │   └── billing/             planos · limites · uso · assinatura
+│   ├── worker/                  jobs pg-boss
+│   └── app/                     Next.js: painel, webhooks, PWA, admin
+└── tests/simulador/             agente-contra-agente + relatório
+</code></pre>
+<h3 id="3-3-isolamento-de-unidades">3.3 Isolamento de unidades</h3>
+<p>Cada módulo de <code>core/</code> expõe uma interface estreita e não conhece o interior dos outros:</p>
+<ul>
+<li><code>ChannelDriver</code> — <code>enviarTexto</code>, <code>enviarMidia</code>, <code>enviarTemplate</code>, <code>normalizarWebhook</code>, <code>statusInstancia</code></li>
+<li><code>LLMProvider</code> — <code>completar(mensagens, ferramentas)</code> devolvendo texto ou chamadas de ferramenta</li>
+<li><code>Transcriber</code> — <code>transcrever(buffer, mimetype)</code></li>
+<li><code>PaymentProvider</code> — <code>criarCobranca</code>, <code>criarAssinatura</code>, <code>cancelarAssinatura</code>, <code>verificarWebhook</code></li>
+<li><code>Tool</code> — <code>nome</code>, <code>descricao</code>, <code>schema</code>, <code>executar(args, ctx)</code></li>
+</ul>
+<p>Trocar Evolution por Meta, Claude por Gemini ou Asaas por Mercado Pago é escrever um arquivo novo e mudar uma variável de ambiente. Nenhum consumidor muda.</p>
+<hr />
+<h2 id="4-multi-tenancy">4. Multi-tenancy</h2>
+<h3 id="4-1-modelo">4.1 Modelo</h3>
+<p>Um tenant é uma empresa. A "pasta de nicho" do modelo config-driven vira linhas no banco, editáveis pelo painel — mesma modelagem, com <code>tenantId</code> na frente.</p>
+<p>As pastas em <code>config/nichos/</code> continuam existindo como <strong>seeds</strong>: criar um tenant a partir do template <code>petshop</code> popula suas tabelas de configuração. Depois disso, o dono edita pelo painel.</p>
+<h3 id="4-2-isolamento">4.2 Isolamento</h3>
+<p>Duas barreiras independentes:</p>
+<ol>
+<li><strong>Prisma Client Extension</strong> injeta <code>tenantId</code> em todo <code>where</code> e todo <code>create</code>. Um repositório de dados sem tenant no contexto lança exceção em vez de retornar tudo.</li>
+<li><strong>Row-Level Security no Postgres</strong> com <code>SET LOCAL app.tenant_id</code> por transação. Se a barreira da aplicação falhar, o banco recusa.</li>
+</ol>
+<p>Rotas de super-admin usam uma conexão separada, com papel distinto, que ignora RLS explicitamente.</p>
+<h3 id="4-3-segredos">4.3 Segredos</h3>
+<p>Credenciais de instância (token da Evolution, token da Meta, chave Asaas) são cifradas em repouso com AES-256-GCM usando uma chave-mestra do ambiente. Nunca trafegam para o cliente; o painel exibe só os quatro últimos caracteres.</p>
+<hr />
+<h2 id="5-configuração-de-nicho">5. Configuração de nicho</h2>
+<p>Seis blocos, versionados em arquivo como seed e editáveis no painel:</p>
+<table>
+<thead>
+<tr>
+<th>Bloco</th>
+<th>Conteúdo</th>
+<th>Tabela</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>negocio.yaml</code></td>
+<td>Nome, endereço, contatos, horário de funcionamento, fuso, integrações ligadas</td>
+<td><code>ConfigNegocio</code></td>
+</tr>
+<tr>
+<td><code>constituicao.md</code></td>
+<td>Base de conhecimento em prosa — a fonte da verdade</td>
+<td><code>Constituicao</code></td>
+</tr>
+<tr>
+<td><code>servicos.yaml</code></td>
+<td>Serviço, preço, duração, profissional, dias de atendimento</td>
+<td><code>Servico</code></td>
+</tr>
+<tr>
+<td><code>persona.md</code></td>
+<td>Objetivo · Tom · Como agir · <strong>O que nunca fazer</strong></td>
+<td><code>Persona</code></td>
+</tr>
+<tr>
+<td><code>funil.yaml</code></td>
+<td>Etapas do funil, ordem e critério de avanço</td>
+<td><code>EtapaFunil</code></td>
+</tr>
+<tr>
+<td><code>marca.yaml</code></td>
+<td>Logo, tokens de cor, fonte do painel</td>
+<td><code>Marca</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>negocio.yaml</code> também declara <strong>quais ferramentas o agente tem</strong>. Um escritório de advocacia desliga <code>agenda</code> inteira e o agente deixa de ver essas ferramentas — sem tocar em código.</p>
+<h3 id="5-1-nichos-de-exemplo-entregues">5.1 Nichos de exemplo entregues</h3>
+<ul>
+<li><strong>clinica-estetica</strong> — reproduz o caso do vídeo: agenda, catálogo com preço por região, avaliação gratuita como objetivo</li>
+<li><strong>petshop</strong> — banho e tosa com porte do animal, produtos, recorrência</li>
+<li><strong>advocacia</strong> — sem agenda, sem preço público; objetivo é qualificar e encaminhar a um humano</li>
+</ul>
+<hr />
+<h2 id="6-o-agente">6. O agente</h2>
+<h3 id="6-1-ciclo-de-uma-mensagem">6.1 Ciclo de uma mensagem</h3>
+<pre><code>webhook do canal
+  → normaliza para MensagemEntrada (tenant, contato, tipo, conteúdo, mídia)
+  → grava e enfileira
+  → debounce por contato (janela configurável, padrão 8s)
+       junta mensagens picotadas em um único turno
+  → resolve mídia
+       áudio → Transcriber   → &quot;[áudio do cliente] &lt;transcrição&gt;&quot;
+       imagem → visão do LLM → &quot;[imagem do cliente] &lt;descrição&gt;&quot;
+  → conversa pausada? grava, notifica o painel e encerra
+  → monta prompt
+       persona + constituição + catálogo + agora() + memória (N últimas)
+  → loop de tool-calling (teto de iterações, padrão 6)
+  → guardrail de saída
+  → envia · grava · atualiza etapa do funil
+</code></pre>
+<h3 id="6-2-prompt">6.2 Prompt</h3>
+<p>Montado na ordem que o vídeo prescreve, porque é a ordem em que o modelo precisa:</p>
+<ol>
+<li><strong>Objetivo</strong> — o que esta conversa precisa alcançar</li>
+<li><strong>Ferramentas disponíveis</strong> — nome e descrição de cada uma; é pela descrição que o modelo escolhe</li>
+<li><strong>Como agir</strong> — tom, tamanho de mensagem, uma pergunta por vez, tratamento de áudio e imagem</li>
+<li><strong>O que nunca fazer</strong> — inventar preço, prometer prazo, oferecer serviço fora do catálogo, mencionar que houve transcrição</li>
+</ol>
+<p>Contexto injetado: constituição completa, catálogo de serviços, data e hora no fuso do tenant, memória.</p>
+<h3 id="6-3-ferramentas">6.3 Ferramentas</h3>
+<table>
+<thead>
+<tr>
+<th>Ferramenta</th>
+<th>Função</th>
+<th>Condição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>buscar_conhecimento</code></td>
+<td>Consulta a constituição</td>
+<td>sempre</td>
+</tr>
+<tr>
+<td><code>ver_horarios_livres</code></td>
+<td>Horários realmente livres na agenda</td>
+<td>agenda ligada</td>
+</tr>
+<tr>
+<td><code>listar_meus_horarios</code></td>
+<td>Agendamentos do contato</td>
+<td>agenda ligada</td>
+</tr>
+<tr>
+<td><code>criar_agendamento</code></td>
+<td>Marca, com nome, serviço e telefone</td>
+<td>agenda ligada</td>
+</tr>
+<tr>
+<td><code>cancelar_agendamento</code></td>
+<td>Cancela e libera o horário</td>
+<td>agenda ligada</td>
+</tr>
+<tr>
+<td><code>salvar_contato</code></td>
+<td>Grava nome, interesse e origem no CRM</td>
+<td>sempre</td>
+</tr>
+<tr>
+<td><code>atualizar_etapa_funil</code></td>
+<td>Move o contato de etapa</td>
+<td>sempre</td>
+</tr>
+<tr>
+<td><code>gerar_cobranca</code></td>
+<td>Cria cobrança Asaas e devolve link/QR PIX</td>
+<td>pagamento ligado</td>
+</tr>
+<tr>
+<td><code>escalar_humano</code></td>
+<td>Pausa o agente e notifica o dono</td>
+<td>sempre</td>
+</tr>
+</tbody>
+</table>
+<h3 id="6-4-guardrails">6.4 Guardrails</h3>
+<p>O prompt não basta. Antes de enviar, um validador determinístico roda:</p>
+<ol>
+<li><strong>Preço inventado</strong> — todo valor monetário na resposta precisa existir no catálogo ou ter vindo de uma <code>gerar_cobranca</code> desta conversa. Falhou, regenera uma vez com o erro no contexto; falhou de novo, escala para humano.</li>
+<li><strong>Serviço inexistente</strong> — nome de serviço citado precisa constar no catálogo.</li>
+<li><strong>Vazamento de rótulo</strong> — a resposta não pode conter <code>[áudio do cliente]</code>, <code>[imagem do cliente]</code> nem a palavra "transcrição".</li>
+<li><strong>Limite de tamanho</strong> — respostas acima do limite do nicho são quebradas em mensagens naturais, não truncadas.</li>
+</ol>
+<p>Toda violação é gravada para alimentar o relatório do simulador.</p>
+<h3 id="6-5-memória">6.5 Memória</h3>
+<p>Janela deslizante das últimas N mensagens por contato — padrão 50, configurável por tenant. Acima disso as mais antigas saem. Um resumo rolante da conversa (gerado a cada 50 mensagens e guardado em <code>Conversa.resumo</code>) preserva o essencial sem carregar o histórico inteiro.</p>
+<hr />
+<h2 id="7-canais">7. Canais</h2>
+<h3 id="7-1-adaptador">7.1 Adaptador</h3>
+<p><code>ChannelDriver</code> unifica os dois. O tenant escolhe por instância.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Evolution API</th>
+<th>Meta Cloud API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conexão</td>
+<td>QR code</td>
+<td>Número verificado pela Meta</td>
+</tr>
+<tr>
+<td>Janela de 24h</td>
+<td>não existe</td>
+<td>existe</td>
+</tr>
+<tr>
+<td>Templates</td>
+<td>mensagens rápidas locais</td>
+<td>templates aprovados pela Meta</td>
+</tr>
+<tr>
+<td>Custo por mensagem</td>
+<td>zero</td>
+<td>tarifado por categoria</td>
+</tr>
+<tr>
+<td>Risco</td>
+<td>bloqueio do número</td>
+<td>nenhum</td>
+</tr>
+<tr>
+<td>Subir</td>
+<td>minutos</td>
+<td>dias de verificação</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-2-janela-de-24h">7.2 Janela de 24h</h3>
+<p>Só existe no driver Meta. <code>Conversa.janelaExpiraEm</code> é atualizada a cada mensagem recebida do contato. O painel mostra o tempo restante na conversa. Expirada, o campo de texto livre desabilita e sobra o seletor de template — exatamente a limitação que o painel do dono existe para contornar.</p>
+<p>No driver Evolution o campo nunca desabilita.</p>
+<h3 id="7-3-templates">7.3 Templates</h3>
+<p><code>Template</code> guarda nome, categoria (<code>UTILITY</code> · <code>MARKETING</code> · <code>AUTHENTICATION</code>), idioma, corpo com variáveis <code>{{1}}</code>, status e id na Meta.</p>
+<p>No painel: criar → submeter à Meta → job de polling acompanha aprovação → disponível para uso. Ao enviar, o sistema tenta <strong>preencher as variáveis automaticamente</strong> a partir da conversa e do agendamento do contato; o que não conseguir extrair fica editável à mão antes do envio.</p>
+<p>No driver Evolution o mesmo objeto vira "mensagem rápida": sem submissão, sem aprovação, disponível na hora.</p>
+<hr />
+<h2 id="8-painel-do-dono">8. Painel do Dono</h2>
+<h3 id="8-1-abas">8.1 Abas</h3>
+<table>
+<thead>
+<tr>
+<th>Aba</th>
+<th>Conteúdo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Conversas</strong></td>
+<td>Inbox estilo WhatsApp Web · alternância Agente ⇄ Manual por conversa · não-lidas · contador da janela de 24h · templates e mensagens rápidas · áudio e imagem inline com a transcrição ao lado</td>
+</tr>
+<tr>
+<td><strong>Funil</strong></td>
+<td>Colunas vindas de <code>EtapaFunil</code>, arrastáveis · contagem e taxa de conversão entre etapas · clique abre a conversa</td>
+</tr>
+<tr>
+<td><strong>CRM</strong></td>
+<td>Tabela de contatos · filtro por etapa, interesse, período e tag · seleção em massa → campanha · exportar CSV</td>
+</tr>
+<tr>
+<td><strong>Campanhas</strong></td>
+<td>Criar, agendar, acompanhar · segmento, mensagem ou template, janela horária, throttle · progresso e falhas ao vivo</td>
+</tr>
+<tr>
+<td><strong>Agenda</strong></td>
+<td>Dia e semana · criar e cancelar direto · o que o agente marcou aparece aqui · sincronização opcional com Google Calendar</td>
+</tr>
+<tr>
+<td><strong>Ajustes</strong></td>
+<td>Editar constituição, catálogo, persona, etapas do funil, marca · ligar e desligar ferramentas · <strong>sandbox</strong> para conversar com o agente sem WhatsApp conectado</td>
+</tr>
+<tr>
+<td><strong>Cobrança</strong></td>
+<td>Plano, consumo do mês, faturas, forma de pagamento</td>
+</tr>
+</tbody>
+</table>
+<h3 id="8-2-área-de-super-admin">8.2 Área de super-admin</h3>
+<p>Rota separada para o operador da plataforma: tenants, planos, consumo agregado, inadimplência, saúde das instâncias, logs de erro por tenant.</p>
+<h3 id="8-3-sistema-visual">8.3 Sistema visual</h3>
+<p>Estilo <strong>Data-Dense Dashboard</strong> — grade densa, padding contido, tabelas e KPIs em primeiro plano, ornamento zero.</p>
+<table>
+<thead>
+<tr>
+<th>Token</th>
+<th>Claro</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--color-primary</code></td>
+<td><code>#2563EB</code></td>
+<td>ação primária, estado ativo</td>
+</tr>
+<tr>
+<td><code>--color-accent</code></td>
+<td><code>#DC2626</code></td>
+<td>urgência, conversa escalada</td>
+</tr>
+<tr>
+<td><code>--color-background</code></td>
+<td><code>#FFFFFF</code></td>
+<td>fundo</td>
+</tr>
+<tr>
+<td><code>--color-foreground</code></td>
+<td><code>#0F172A</code></td>
+<td>texto</td>
+</tr>
+<tr>
+<td><code>--color-muted</code></td>
+<td><code>#F1F5FD</code></td>
+<td>superfície secundária</td>
+</tr>
+<tr>
+<td><code>--color-border</code></td>
+<td><code>#E4ECFC</code></td>
+<td>divisórias</td>
+</tr>
+</tbody>
+</table>
+<p>Tipografia: <strong>Fira Sans</strong> na interface, <strong>Fira Code</strong> em colunas numéricas, horários e identificadores — números tabulares evitam o texto dançar entre linhas.</p>
+<p><code>marca.yaml</code> sobrescreve os tokens por tenant, então o white-label é troca de variável CSS, não fork de tema. Claro e escuro desenhados juntos, contraste verificado em cada um separadamente.</p>
+<p>Não negociável: contraste 4.5:1 no texto, alvos de toque de 44px, foco visível no teclado, ícones Lucide (nunca emoji), <code>prefers-reduced-motion</code> respeitado, transições de 150–300ms, listas acima de 50 itens virtualizadas.</p>
+<h3 id="8-4-pwa">8.4 PWA</h3>
+<p>Manifest, service worker e Web Push (VAPID) para nova mensagem e conversa escalada. No mobile o inbox vira duas telas — lista, depois conversa — com navegação inferior de cinco itens e o resto em "Mais". Safe-area respeitada, sem scroll horizontal em 375px.</p>
+<hr />
+<h2 id="9-campanhas-e-disparo-em-massa">9. Campanhas e disparo em massa</h2>
+<h3 id="9-1-motor">9.1 Motor</h3>
+<p>Segmento montado no CRM → <code>Campanha</code> → job gera um <code>EnvioCampanha</code> por contato → worker consome respeitando:</p>
+<ul>
+<li><strong>Throttle</strong> — mensagens por minuto configurável, com jitter aleatório para não formar padrão de robô</li>
+<li><strong>Janela horária</strong> — só dispara dentro do horário permitido do tenant (padrão 9h–20h)</li>
+<li><strong>Cota diária</strong> por instância</li>
+<li><strong>Opt-out</strong> — <code>SAIR</code> ou <code>PARAR</code> marca <code>Contato.optOut</code> e o exclui de toda campanha futura; rodapé com a instrução é anexado automaticamente no driver Evolution</li>
+</ul>
+<h3 id="9-2-risco-por-driver">9.2 Risco por driver</h3>
+<p>No driver Evolution, disparo em massa é o caminho mais curto para o número ser bloqueado. O painel exibe o aviso ao criar a campanha e a cota padrão nasce conservadora. No driver Meta o mesmo motor usa template aprovado e opera dentro das regras da plataforma.</p>
+<hr />
+<h2 id="10-cobrança">10. Cobrança</h2>
+<h3 id="10-1-assinatura-da-plataforma">10.1 Assinatura da plataforma</h3>
+<p><code>Plano</code> define limites: instâncias, mensagens por mês, usuários, campanhas por mês. <code>Assinatura</code> espelha a assinatura Asaas. <code>UsoMensal</code> acumula o consumo.</p>
+<p>Trial de 7 dias sem cartão. Em 80% do limite, aviso no painel. Em 100%, o agente para de responder e o dono é notificado — as conversas continuam chegando e ficam visíveis para atendimento manual, porque cortar a visibilidade puniria o cliente final. Webhook da Asaas atualiza o status; inadimplência suspende após período de tolerância.</p>
+<h3 id="10-2-link-de-pagamento-na-conversa">10.2 Link de pagamento na conversa</h3>
+<p><code>gerar_cobranca(valor, descricao, metodo)</code> cria a cobrança na Asaas e devolve link e QR Code PIX, que o agente manda na conversa. O webhook de confirmação marca como paga, avança a etapa do funil e notifica o dono.</p>
+<p>O valor precisa vir do catálogo ou de uma regra do nicho — o guardrail de preço inventado se aplica aqui também.</p>
+<hr />
+<h2 id="11-testes">11. Testes</h2>
+<h3 id="11-1-simulador-agente-contra-agente">11.1 Simulador agente-contra-agente</h3>
+<p>O método que o vídeo usa para sair de 17 erros em 30 mensagens e chegar a zero em 100 conversas:</p>
+<ol>
+<li>Um gerador cria N personas de cliente a partir do nicho — o apressado, o que só pergunta preço, o que manda áudio confuso, o que muda de ideia, o que tenta agendar fora do horário</li>
+<li>Cada persona conversa com o agente até encerrar ou atingir o teto de turnos</li>
+<li>Um juiz LLM avalia cada resposta contra as regras da persona do tenant, e os guardrails determinísticos entram como avaliação objetiva</li>
+<li>Sai um relatório em Markdown e JSON: taxa de violação por regra, trecho ofensor, conversa de origem</li>
+</ol>
+<p><code>npm run simular -- --nicho petshop --conversas 100</code></p>
+<h3 id="11-2-demais-níveis">11.2 Demais níveis</h3>
+<ul>
+<li><strong>Unitário</strong> — guardrails, debounce, throttle, segmentação, cálculo de horários livres, montagem de prompt</li>
+<li><strong>Integração</strong> — drivers de canal contra servidor falso, webhooks Asaas, isolamento de tenant (um tenant tentando ler outro precisa falhar)</li>
+<li><strong>E2E</strong> — Playwright nos fluxos do painel: assumir e devolver conversa, criar campanha, editar catálogo</li>
+</ul>
+<hr />
+<h2 id="12-erros-e-observabilidade">12. Erros e observabilidade</h2>
+<table>
+<thead>
+<tr>
+<th>Falha</th>
+<th>Resposta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM fora do ar</td>
+<td>Retenta com backoff; persistindo, cai no provider alternativo; falhando, escala para humano</td>
+</tr>
+<tr>
+<td>Transcrição falha</td>
+<td>Agente pede gentilmente que escreva</td>
+</tr>
+<tr>
+<td>Canal fora do ar</td>
+<td>Mensagem fica em fila e reenvia; painel mostra a instância como desconectada</td>
+</tr>
+<tr>
+<td>Webhook duplicado</td>
+<td>Idempotência por id externo da mensagem</td>
+</tr>
+<tr>
+<td>Loop de ferramentas</td>
+<td>Teto de iterações; estourou, escala</td>
+</tr>
+<tr>
+<td>Asaas fora do ar</td>
+<td>Cobrança em fila; agente avisa que o link chega em instantes</td>
+</tr>
+</tbody>
+</table>
+<p>Logs estruturados com <code>tenantId</code> e <code>conversaId</code> em toda linha. Cada turno do agente grava um <code>TraceAgente</code>: prompt, ferramentas chamadas, tokens, latência, violações. É o que torna a otimização possível em vez de adivinhação.</p>
+<hr />
+<h2 id="13-fora-de-escopo">13. Fora de escopo</h2>
+<p>Não entram nesta entrega: app nativo em loja, Instagram e Telegram (a interface de canal já os acomoda depois), relatórios de BI além do funil, gravação de chamadas, agente de voz, marketplace de nichos.</p>
+<hr />
+<h2 id="14-decomposição-em-fases">14. Decomposição em fases</h2>
+<p>O sistema descrito acima é grande demais para um único plano de implementação — são sete subsistemas que podem ser construídos e validados de forma independente. Cada fase recebe seu próprio plano e termina em algo demonstrável.</p>
+<p>A ordem não é arbitrária: cada fase depende só das anteriores, e as fundações mais caras de mudar vêm primeiro.</p>
+<h3 id="fase-1-fundação-e-cérebro-do-agente">Fase 1 — Fundação e cérebro do agente</h3>
+<p>Prisma + Postgres, modelagem multi-tenant com as duas barreiras de isolamento, carregador de configuração de nicho, os quatro pilares (<code>LLMProvider</code>, prompt, <code>tools</code>, memória), guardrails, e o <strong>sandbox</strong> no navegador.</p>
+<p>Entrega demonstrável: conversar com o agente da clínica pela web, sem WhatsApp, e ver as ferramentas sendo escolhidas.
+Por que primeiro: é o núcleo do produto e a modelagem de tenant é a decisão mais cara de reverter.</p>
+<h3 id="fase-2-canal-e-conversas-reais">Fase 2 — Canal e conversas reais</h3>
+<p><code>ChannelDriver</code>, driver Evolution, normalizador de webhook, debounce de mensagens picotadas, transcrição de áudio, visão para imagem, persistência de conversas.</p>
+<p>Entrega: o agente atende de verdade em um número de WhatsApp, entendendo áudio e foto.</p>
+<h3 id="fase-3-painel-do-dono-núcleo">Fase 3 — Painel do Dono, núcleo</h3>
+<p>Auth, layout, sistema de tokens white-label, aba Conversas com alternância Agente ⇄ Manual, aba Agenda, aba Ajustes com editor de configuração.</p>
+<p>Entrega: o dono opera o atendimento pelo painel.</p>
+<h3 id="fase-4-crm-e-funil">Fase 4 — CRM e funil</h3>
+<p>Etapas configuráveis, ferramentas de funil no agente, aba Funil, aba CRM com filtros e exportação, sincronização opcional com Google Sheets e Calendar.</p>
+<p>Entrega: o dono enxerga onde cada cliente parou.</p>
+<h3 id="fase-5-simulador-e-endurecimento">Fase 5 — Simulador e endurecimento</h3>
+<p>Gerador de personas, motor de conversa agente-contra-agente, juiz, relatório. Rodar o ciclo até zerar as violações nos três nichos de exemplo.</p>
+<p>Entrega: prova numérica de que o agente não erra.
+Por que aqui: precisa das fases anteriores para ter o que testar, e precisa vir antes de colocar dinheiro e disparo em massa em cima.</p>
+<h3 id="fase-6-driver-meta-templates-e-janela-de-24h">Fase 6 — Driver Meta, templates e janela de 24h</h3>
+<p>Segundo driver de canal, ciclo de submissão e aprovação de templates, contador de janela no painel, mensagens rápidas como equivalente na Evolution.</p>
+<p>Entrega: o tenant escolhe canal oficial ou não-oficial sem trocar nada mais.</p>
+<h3 id="fase-7-campanhas">Fase 7 — Campanhas</h3>
+<p>Segmentação a partir do CRM, motor de disparo com throttle, janela horária, cota e opt-out, aba Campanhas com acompanhamento ao vivo.</p>
+<h3 id="fase-8-cobrança">Fase 8 — Cobrança</h3>
+<p>Asaas, planos e limites, assinatura e trial, medição de uso, bloqueio gradual, ferramenta <code>gerar_cobranca</code>, aba Cobrança, área de super-admin.</p>
+<h3 id="fase-9-pwa">Fase 9 — PWA</h3>
+<p>Manifest, service worker, Web Push, layout mobile do inbox, navegação inferior.</p>
+<h3 id="dependências">Dependências</h3>
+<pre><code>1 ──&gt; 2 ──&gt; 3 ──&gt; 4 ──&gt; 5 ──&gt; 6 ──&gt; 7
+                  └────────────────&gt; 8
+                        3 ──────────&gt; 9
+</code></pre>
+<p>As fases 7, 8 e 9 são independentes entre si e podem trocar de ordem conforme a urgência.</p></main>
+</div>
+<script>
+(function(){
+  var KEY='ms-theme', root=document.documentElement;
+  try{ var s=localStorage.getItem(KEY); if(s) root.setAttribute('data-theme',s); }catch(e){}
+  var b=document.getElementById('theme');
+  if(b) b.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur) cur=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+    var next=cur==='dark'?'light':'dark';
+    root.setAttribute('data-theme',next);
+    try{ localStorage.setItem(KEY,next); }catch(e){}
+  });
+  var secs=[].slice.call(document.querySelectorAll('main h2[id],main h3[id]'));
+  var links={};
+  [].forEach.call(document.querySelectorAll('nav a.sec'),function(a){
+    links[a.getAttribute('href').slice(1)]=a;
+  });
+  if(secs.length && 'IntersectionObserver' in window){
+    var obs=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        var a=links[e.target.id]; if(!a) return;
+        if(e.isIntersecting){
+          for(var k in links) links[k].classList.remove('active');
+          a.classList.add('active');
+        }
+      });
+    },{rootMargin:'-10% 0px -80% 0px'});
+    secs.forEach(function(s){obs.observe(s);});
+  }
+})();
+</script>
+</body>
+</html>
