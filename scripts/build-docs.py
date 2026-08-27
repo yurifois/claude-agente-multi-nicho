@@ -283,7 +283,7 @@ o minimo de 4.5:1 da WCAG para texto. Entao o tema claro usa a ponta profunda da
 rampa em tudo que carrega texto, e reserva o laranja vivo para o que nao precisa ser lido:
 icones, bordas, series de grafico.</p>
 <div class="note">No escuro o problema desaparece. <code>#FF8A2B</code> sobre preto da
-<b>8.1:1</b> &mdash; e por isso que a marca parece mais ela mesma no tema escuro.</div>
+<b>8.9:1</b> &mdash; e por isso que a marca parece mais ela mesma no tema escuro.</div>
 
 <h2 id="componentes">Componentes</h2>
 <div class="demo">

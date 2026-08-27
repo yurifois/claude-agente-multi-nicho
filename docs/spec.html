@@ -44,9 +44,9 @@
 
   /* Laranja puro reprova contraste em branco, então o tema claro usa
      a ponta profunda da mesma rampa para tudo que carrega texto. */
-  --color-primary:       #C42D08;  /* 6.3:1 em branco */
+  --color-primary:       #C42D08;  /* 5.6:1 em branco */
   --color-primary-hover: #A82505;
-  --color-primary-fill:  #D8380C;  /* fundo de botão, branco por cima: 5.2:1 */
+  --color-primary-fill:  #D8380C;  /* fundo de botão, branco por cima: 4.7:1 */
   --color-on-primary:    #FFFFFF;
 
   /* Só para superfícies sem texto: ícones, bordas, séries de gráfico. */
@@ -92,12 +92,12 @@
     --color-surface-raised:#131009;
     --color-muted:         #1C1710;
     --color-border:        #2C231A;
-    --color-border-strong: #43342444;
+    --color-border-strong: #433424;
 
     --color-foreground:    #F7EFE6;
     --color-foreground-dim:#A6968A;
 
-    --color-primary:       #FF8A2B;  /* 8.1:1 em preto */
+    --color-primary:       #FF8A2B;  /* 8.9:1 em preto */
     --color-primary-hover: #FFA51C;
     --color-primary-fill:  #F04310;
     --color-on-primary:    #FFFFFF;
@@ -379,7 +379,7 @@ blockquote{margin:18px 0; padding:2px 18px;
     <a class="sec" href="#8-painel-do-dono">8. Painel do Dono</a>
     <a class="sec lvl3" href="#8-1-abas">8.1 Abas</a>
     <a class="sec lvl3" href="#8-2-área-de-super-admin">8.2 Área de super-admin</a>
-    <a class="sec lvl3" href="#8-3-sistema-visual">8.3 Sistema visual</a>
+    <a class="sec lvl3" href="#8-3-sistema-visual-mind-sculptor">8.3 Sistema visual — Mind Sculptor</a>
     <a class="sec lvl3" href="#8-4-pwa">8.4 PWA</a>
     <a class="sec" href="#9-campanhas-e-disparo-em-massa">9. Campanhas e disparo em massa</a>
     <a class="sec lvl3" href="#9-1-motor">9.1 Motor</a>
@@ -800,51 +800,55 @@ blockquote{margin:18px 0; padding:2px 18px;
 </table>
 <h3 id="8-2-área-de-super-admin">8.2 Área de super-admin</h3>
 <p>Rota separada para o operador da plataforma: tenants, planos, consumo agregado, inadimplência, saúde das instâncias, logs de erro por tenant.</p>
-<h3 id="8-3-sistema-visual">8.3 Sistema visual</h3>
-<p>Estilo <strong>Data-Dense Dashboard</strong> — grade densa, padding contido, tabelas e KPIs em primeiro plano, ornamento zero.</p>
+<h3 id="8-3-sistema-visual-mind-sculptor">8.3 Sistema visual — Mind Sculptor</h3>
+<p>Estilo <strong>Data-Dense Dashboard</strong> — grade densa, padding contido, tabelas e KPIs em primeiro plano, ornamento zero — vestido com a identidade Mind Sculptor.</p>
+<p>A paleta sai da logo: as peças superiores do quebra-cabeça são âmbar, a base e o rosto puxam para o vermelho, tudo sobre preto puro. Essa progressão vira a rampa do produto inteiro.</p>
 <table>
 <thead>
 <tr>
 <th>Token</th>
-<th>Claro</th>
+<th>Valor</th>
 <th>Papel</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>--color-primary</code></td>
-<td><code>#2563EB</code></td>
-<td>ação primária, estado ativo</td>
+<td><code>--brand-300</code></td>
+<td><code>#FFC24A</code></td>
+<td>brilho das peças</td>
 </tr>
 <tr>
-<td><code>--color-accent</code></td>
-<td><code>#DC2626</code></td>
-<td>urgência, conversa escalada</td>
+<td><code>--brand-400</code></td>
+<td><code>#FFA51C</code></td>
+<td>âmbar do topo</td>
 </tr>
 <tr>
-<td><code>--color-background</code></td>
-<td><code>#FFFFFF</code></td>
-<td>fundo</td>
+<td><code>--brand-500</code></td>
+<td><code>#FF7A1A</code></td>
+<td>laranja-núcleo da marca</td>
 </tr>
 <tr>
-<td><code>--color-foreground</code></td>
-<td><code>#0F172A</code></td>
-<td>texto</td>
+<td><code>--brand-600</code></td>
+<td><code>#F04310</code></td>
+<td>vermelho-laranja</td>
 </tr>
 <tr>
-<td><code>--color-muted</code></td>
-<td><code>#F1F5FD</code></td>
-<td>superfície secundária</td>
+<td><code>--brand-700</code></td>
+<td><code>#C42D08</code></td>
+<td>sombra · ação no tema claro</td>
 </tr>
 <tr>
-<td><code>--color-border</code></td>
-<td><code>#E4ECFC</code></td>
-<td>divisórias</td>
+<td><code>--ink-950</code></td>
+<td><code>#000000</code></td>
+<td>o preto da logo</td>
 </tr>
 </tbody>
 </table>
-<p>Tipografia: <strong>Fira Sans</strong> na interface, <strong>Fira Code</strong> em colunas numéricas, horários e identificadores — números tabulares evitam o texto dançar entre linhas.</p>
-<p><code>marca.yaml</code> sobrescreve os tokens por tenant, então o white-label é troca de variável CSS, não fork de tema. Claro e escuro desenhados juntos, contraste verificado em cada um separadamente.</p>
+<p><strong>O tema claro não pode usar o laranja da logo em texto.</strong> <code>#FF7A1A</code> sobre branco rende ~2.6:1 e reprova o mínimo de 4.5:1 da WCAG. Então o tema claro usa a ponta profunda da mesma rampa (<code>#C42D08</code>, 5.6:1) em tudo que carrega texto, e reserva o laranja vivo para o que não precisa ser lido: ícones, bordas, séries de gráfico.</p>
+<p>No tema escuro o problema desaparece — <code>#FF8A2B</code> sobre preto dá 8.9:1. <strong>O escuro é o habitat nativo da marca</strong> e é o padrão do painel.</p>
+<p>Tipografia: <strong>Fira Sans</strong> na interface, <strong>Fira Code</strong> em colunas numéricas, horários, telefones e identificadores — números tabulares evitam as colunas dançarem a cada atualização ao vivo. A serifada display da logo fica só na logo.</p>
+<p>Tokens completos em <code>assets/brand/tokens.css</code>; guia visual navegável em <code>docs/brand.html</code>.</p>
+<p><code>marca.yaml</code> sobrescreve <code>--color-primary</code> e a logo por tenant — o white-label é troca de variável CSS, não fork de tema. Claro e escuro desenhados juntos, contraste verificado em cada um separadamente.</p>
 <p>Não negociável: contraste 4.5:1 no texto, alvos de toque de 44px, foco visível no teclado, ícones Lucide (nunca emoji), <code>prefers-reduced-motion</code> respeitado, transições de 150–300ms, listas acima de 50 itens virtualizadas.</p>
 <h3 id="8-4-pwa">8.4 PWA</h3>
 <p>Manifest, service worker e Web Push (VAPID) para nova mensagem e conversa escalada. No mobile o inbox vira duas telas — lista, depois conversa — com navegação inferior de cinco itens e o resto em "Mais". Safe-area respeitada, sem scroll horizontal em 375px.</p>

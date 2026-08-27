@@ -279,9 +279,9 @@ A paleta sai da logo: as peças superiores do quebra-cabeça são âmbar, a base
 | `--brand-700` | `#C42D08` | sombra · ação no tema claro |
 | `--ink-950` | `#000000` | o preto da logo |
 
-**O tema claro não pode usar o laranja da logo em texto.** `#FF7A1A` sobre branco rende ~2.6:1 e reprova o mínimo de 4.5:1 da WCAG. Então o tema claro usa a ponta profunda da mesma rampa (`#C42D08`, 6.3:1) em tudo que carrega texto, e reserva o laranja vivo para o que não precisa ser lido: ícones, bordas, séries de gráfico.
+**O tema claro não pode usar o laranja da logo em texto.** `#FF7A1A` sobre branco rende ~2.6:1 e reprova o mínimo de 4.5:1 da WCAG. Então o tema claro usa a ponta profunda da mesma rampa (`#C42D08`, 5.6:1) em tudo que carrega texto, e reserva o laranja vivo para o que não precisa ser lido: ícones, bordas, séries de gráfico.
 
-No tema escuro o problema desaparece — `#FF8A2B` sobre preto dá 8.1:1. **O escuro é o habitat nativo da marca** e é o padrão do painel.
+No tema escuro o problema desaparece — `#FF8A2B` sobre preto dá 8.9:1. **O escuro é o habitat nativo da marca** e é o padrão do painel.
 
 Tipografia: **Fira Sans** na interface, **Fira Code** em colunas numéricas, horários, telefones e identificadores — números tabulares evitam as colunas dançarem a cada atualização ao vivo. A serifada display da logo fica só na logo.
 
