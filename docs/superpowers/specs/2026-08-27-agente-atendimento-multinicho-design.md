@@ -51,11 +51,11 @@ Automação linear segue trilho fixo, aceita entrada previsível (formulário), 
 
 | Camada | Escolha |
 |---|---|
-| App + painel | Next.js 15 (App Router) + TypeScript |
+| App + painel | Next.js 16 (App Router) + TypeScript |
 | UI | Tailwind + shadcn/ui, tokens semânticos por tenant |
 | Banco | PostgreSQL + Prisma |
 | Fila e agendamento | pg-boss (dentro do Postgres, sem Redis) |
-| LLM | Claude Sonnet 5 (padrão) · Gemini (alternativo) |
+| LLM | Claude Opus 5 (padrão) · Gemini (alternativo) |
 | Transcrição | Whisper (OpenAI/Groq) · Gemini como alternativa |
 | Canal | Adaptador plugável: Evolution API (padrão) · Meta Cloud API |
 | Pagamento | Asaas (PIX, boleto, cartão, assinatura) |
@@ -182,7 +182,13 @@ Montado na ordem que o vídeo prescreve, porque é a ordem em que o modelo preci
 3. **Como agir** — tom, tamanho de mensagem, uma pergunta por vez, tratamento de áudio e imagem
 4. **O que nunca fazer** — inventar preço, prometer prazo, oferecer serviço fora do catálogo, mencionar que houve transcrição
 
-Contexto injetado: constituição completa, catálogo de serviços, data e hora no fuso do tenant, memória.
+Contexto injetado: constituição completa, catálogo de serviços, memória, e a data e hora no fuso do tenant.
+
+**A fronteira do cache importa.** A constituição e o catálogo são grandes e mudam raramente — são o candidato ideal a prompt caching, que corta ~90% do custo do prefixo. Mas o cache é casamento de prefixo: **um byte que muda invalida tudo depois dele**. Se a data e hora entrarem no bloco de sistema junto da constituição, o cache morre a cada mensagem e o desconto nunca acontece.
+
+Por isso o bloco de sistema leva só o que é estável por tenant — persona, constituição, catálogo, ferramentas — com o ponto de cache no fim. Data, hora e qualquer estado volátil entram do lado das mensagens, depois da fronteira.
+
+`TraceAgente` grava `cache_read_input_tokens` a cada turno. Se esse número for zero em requisições seguidas do mesmo tenant, alguma coisa está invalidando o prefixo — é o sinal de alarme.
 
 ### 6.3 Ferramentas
 

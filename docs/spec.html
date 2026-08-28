@@ -472,7 +472,7 @@ blockquote{margin:18px 0; padding:2px 18px;
 <tbody>
 <tr>
 <td>App + painel</td>
-<td>Next.js 15 (App Router) + TypeScript</td>
+<td>Next.js 16 (App Router) + TypeScript</td>
 </tr>
 <tr>
 <td>UI</td>
@@ -488,7 +488,7 @@ blockquote{margin:18px 0; padding:2px 18px;
 </tr>
 <tr>
 <td>LLM</td>
-<td>Claude Sonnet 5 (padrão) · Gemini (alternativo)</td>
+<td>Claude Opus 5 (padrão) · Gemini (alternativo)</td>
 </tr>
 <tr>
 <td>Transcrição</td>
@@ -636,7 +636,10 @@ blockquote{margin:18px 0; padding:2px 18px;
 <li><strong>Como agir</strong> — tom, tamanho de mensagem, uma pergunta por vez, tratamento de áudio e imagem</li>
 <li><strong>O que nunca fazer</strong> — inventar preço, prometer prazo, oferecer serviço fora do catálogo, mencionar que houve transcrição</li>
 </ol>
-<p>Contexto injetado: constituição completa, catálogo de serviços, data e hora no fuso do tenant, memória.</p>
+<p>Contexto injetado: constituição completa, catálogo de serviços, memória, e a data e hora no fuso do tenant.</p>
+<p><strong>A fronteira do cache importa.</strong> A constituição e o catálogo são grandes e mudam raramente — são o candidato ideal a prompt caching, que corta ~90% do custo do prefixo. Mas o cache é casamento de prefixo: <strong>um byte que muda invalida tudo depois dele</strong>. Se a data e hora entrarem no bloco de sistema junto da constituição, o cache morre a cada mensagem e o desconto nunca acontece.</p>
+<p>Por isso o bloco de sistema leva só o que é estável por tenant — persona, constituição, catálogo, ferramentas — com o ponto de cache no fim. Data, hora e qualquer estado volátil entram do lado das mensagens, depois da fronteira.</p>
+<p><code>TraceAgente</code> grava <code>cache_read_input_tokens</code> a cada turno. Se esse número for zero em requisições seguidas do mesmo tenant, alguma coisa está invalidando o prefixo — é o sinal de alarme.</p>
 <h3 id="6-3-ferramentas">6.3 Ferramentas</h3>
 <table>
 <thead>

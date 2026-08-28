@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mind-sculptor-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agente
+      POSTGRES_PASSWORD: agente_dev
+      POSTGRES_DB: agente
+    # 5433 no host para não colidir com um Postgres já instalado na máquina
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./prisma/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agente -d agente"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

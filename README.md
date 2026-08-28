@@ -36,8 +36,8 @@ Todo fluxo determinístico — sincronizar planilha, enviar lembrete, cobrar ass
 
 ## Stack
 
-Next.js 15 · TypeScript · Tailwind · shadcn/ui · PostgreSQL · Prisma · pg-boss
-Claude Sonnet 5 (Gemini alternativo) · Whisper · Evolution API / Meta Cloud API · Asaas
+Next.js 16 · TypeScript · Tailwind · shadcn/ui · PostgreSQL · Prisma · pg-boss
+Claude Opus 5 (Gemini alternativo) · Whisper · Evolution API / Meta Cloud API · Asaas
 
 ## Documentação
 
