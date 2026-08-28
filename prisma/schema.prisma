@@ -1,0 +1,386 @@
+// Mind Sculptor — agente de atendimento multi-nicho
+//
+// Regra que atravessa este schema: todo modelo de dados de negócio carrega
+// `tenantId`. As exceções são Tenant e Usuario — um usuário pode pertencer a
+// mais de um tenant, e essa ligação vive em Membership.
+//
+// O isolamento tem duas barreiras independentes:
+//   1. Prisma Client Extension injeta tenantId em todo where/create
+//   2. Row-Level Security no Postgres recusa se a primeira falhar
+// Ver prisma/migrations/*_rls e src/core/tenant/.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// Tenancy
+// ============================================================
+
+model Tenant {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  nome      String
+  /// Slug do nicho de origem: clinica-estetica, petshop, advocacia
+  nicho     String
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+  alteradoEm DateTime @updatedAt
+
+  memberships     Membership[]
+  configNegocio   ConfigNegocio?
+  constituicao    Constituicao?
+  persona         Persona?
+  marca           Marca?
+  servicos        Servico[]
+  profissionais   Profissional[]
+  etapasFunil     EtapaFunil[]
+  ferramentas     FerramentaAtiva[]
+  contatos        Contato[]
+  conversas       Conversa[]
+  mensagens       Mensagem[]
+  agendamentos    Agendamento[]
+  traces          TraceAgente[]
+
+  @@map("tenant")
+}
+
+model Usuario {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  nome       String
+  criadoEm   DateTime @default(now())
+
+  memberships Membership[]
+
+  @@map("usuario")
+}
+
+enum PapelMembro {
+  DONO
+  ATENDENTE
+}
+
+model Membership {
+  id        String      @id @default(cuid())
+  usuarioId String
+  tenantId  String
+  papel     PapelMembro @default(ATENDENTE)
+  criadoEm  DateTime    @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, tenantId])
+  @@index([tenantId])
+  @@map("membership")
+}
+
+// ============================================================
+// Configuração de nicho
+// Espelha config/nichos/<slug>/. Seed popula, painel edita.
+// ============================================================
+
+model ConfigNegocio {
+  tenantId  String  @id
+  nome      String
+  endereco  String?
+  telefone  String?
+  email     String?
+  instagram String?
+  /// IANA, ex.: America/Sao_Paulo. Todo horário no banco é UTC;
+  /// este campo é usado só na conversão de borda.
+  fuso      String  @default("America/Sao_Paulo")
+  /// [{ dia: 1, abre: "09:00", fecha: "18:00" }] — dia 0=domingo
+  horarios  Json    @default("[]")
+  /// { googleCalendar: false, googleSheets: false, pagamento: false }
+  integracoes Json  @default("{}")
+
+  /// Janela de agrupamento de mensagens picotadas, em segundos.
+  debounceSegundos Int @default(8)
+  /// Quantas mensagens o agente lembra por contato.
+  memoriaMensagens Int @default(50)
+
+  alteradoEm DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("config_negocio")
+}
+
+model Constituicao {
+  tenantId  String   @id
+  /// Markdown. A fonte da verdade sobre o negócio.
+  conteudo  String
+  versao    Int      @default(1)
+  alteradoEm DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("constituicao")
+}
+
+model Persona {
+  tenantId  String @id
+  objetivo  String
+  tom       String
+  comoAgir  String
+  /// O que o agente NUNCA deve fazer. Alimenta prompt e simulador.
+  nuncaFazer String
+  alteradoEm DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("persona")
+}
+
+model Marca {
+  tenantId     String  @id
+  logoUrl      String?
+  corPrimaria  String  @default("#FF7A1A")
+  corAcento    String  @default("#FFA51C")
+  alteradoEm   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("marca")
+}
+
+model Servico {
+  id        String  @id @default(cuid())
+  tenantId  String
+  nome      String
+  descricao String?
+  /// Em centavos. Null = preço não é público (advocacia).
+  precoCentavos Int?
+  /// true quando o preço é "a partir de" — muda como o agente fala dele.
+  precoAPartirDe Boolean @default(false)
+  duracaoMinutos Int?
+  /// Dimensão extra do catálogo por nicho.
+  /// Petshop: [{ rotulo: "Porte pequeno", precoCentavos: 6000 }]
+  /// Clínica: [{ rotulo: "Testa", precoCentavos: 60000 }]
+  variacoes Json    @default("[]")
+  ativo     Boolean @default(true)
+  criadoEm  DateTime @default(now())
+
+  tenant        Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  profissionais ServicoProfissional[]
+  agendamentos  Agendamento[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@map("servico")
+}
+
+model Profissional {
+  id           String @id @default(cuid())
+  tenantId     String
+  nome         String
+  especialidade String?
+  /// Dias da semana atendidos. 0=domingo .. 6=sábado
+  diasAtendimento Int[] @default([])
+  ativo        Boolean @default(true)
+
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  servicos     ServicoProfissional[]
+  agendamentos Agendamento[]
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@map("profissional")
+}
+
+model ServicoProfissional {
+  servicoId      String
+  profissionalId String
+
+  servico      Servico      @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+  profissional Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+
+  @@id([servicoId, profissionalId])
+  @@map("servico_profissional")
+}
+
+model EtapaFunil {
+  id       String @id @default(cuid())
+  tenantId String
+  /// Chave estável usada pelo agente: contatou, respondeu, qualificado...
+  chave    String
+  nome     String
+  ordem    Int
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contatos Contato[]
+
+  @@unique([tenantId, chave])
+  @@index([tenantId])
+  @@map("etapa_funil")
+}
+
+model FerramentaAtiva {
+  id       String  @id @default(cuid())
+  tenantId String
+  /// Nome registrado no registry: ver_horarios_livres, criar_agendamento...
+  nome     String
+  ativa    Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, nome])
+  @@index([tenantId])
+  @@map("ferramenta_ativa")
+}
+
+// ============================================================
+// Operação
+// ============================================================
+
+model Contato {
+  id        String   @id @default(cuid())
+  tenantId  String
+  /// E.164 sem o "+", como a Meta e a Evolution entregam.
+  telefone  String
+  nome      String?
+  /// Serviço ou assunto de interesse, preenchido pelo agente.
+  interesse String?
+  etapaId   String?
+  /// Respondeu SAIR/PARAR. Excluído de toda campanha.
+  optOut    Boolean  @default(false)
+  tags      String[] @default([])
+  criadoEm  DateTime @default(now())
+  alteradoEm DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  etapa        EtapaFunil?   @relation(fields: [etapaId], references: [id], onDelete: SetNull)
+  conversas    Conversa[]
+  agendamentos Agendamento[]
+
+  @@unique([tenantId, telefone])
+  @@index([tenantId, etapaId])
+  @@map("contato")
+}
+
+model Conversa {
+  id        String   @id @default(cuid())
+  tenantId  String
+  contatoId String
+  /// true = o humano assumiu; o agente grava mas não responde.
+  pausada   Boolean  @default(false)
+  /// Resumo rolante, para não carregar o histórico inteiro no prompt.
+  resumo    String?
+  /// Só existe no driver Meta. Passou, apenas template reabre.
+  janelaExpiraEm   DateTime?
+  ultimaMensagemEm DateTime  @default(now())
+  criadoEm  DateTime @default(now())
+
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contato   Contato      @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  mensagens Mensagem[]
+  traces    TraceAgente[]
+
+  @@index([tenantId, ultimaMensagemEm])
+  @@index([tenantId, contatoId])
+  @@map("conversa")
+}
+
+enum PapelMensagem {
+  CONTATO
+  AGENTE
+  /// Enviada manualmente pelo dono no painel.
+  HUMANO
+  SISTEMA
+}
+
+enum TipoMensagem {
+  TEXTO
+  AUDIO
+  IMAGEM
+  DOCUMENTO
+}
+
+model Mensagem {
+  id        String        @id @default(cuid())
+  tenantId  String
+  conversaId String
+  papel     PapelMensagem
+  tipo      TipoMensagem  @default(TEXTO)
+  conteudo  String
+  /// Transcrição do áudio ou descrição da imagem, já em texto.
+  midiaTexto String?
+  midiaUrl   String?
+  /// Id da mensagem no canal. Garante idempotência de webhook duplicado.
+  externalId String?
+  criadoEm   DateTime      @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversa Conversa @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, externalId])
+  @@index([tenantId, conversaId, criadoEm])
+  @@map("mensagem")
+}
+
+enum StatusAgendamento {
+  MARCADO
+  CONFIRMADO
+  CANCELADO
+  COMPARECEU
+  FALTOU
+}
+
+model Agendamento {
+  id             String   @id @default(cuid())
+  tenantId       String
+  contatoId      String
+  servicoId      String?
+  profissionalId String?
+  /// Sempre UTC. A conversão para o fuso do tenant é de borda.
+  inicioUtc      DateTime
+  fimUtc         DateTime
+  status         StatusAgendamento @default(MARCADO)
+  observacao     String?
+  /// Id do evento no Google Calendar, quando a integração está ligada.
+  externalId     String?
+  criadoEm       DateTime @default(now())
+  alteradoEm     DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contato      Contato       @relation(fields: [contatoId], references: [id], onDelete: Cascade)
+  servico      Servico?      @relation(fields: [servicoId], references: [id], onDelete: SetNull)
+  profissional Profissional? @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, inicioUtc])
+  @@index([tenantId, contatoId])
+  @@map("agendamento")
+}
+
+/// Um registro por turno do agente. É o que torna a otimização possível
+/// em vez de adivinhação — e o que denuncia prompt cache quebrado.
+model TraceAgente {
+  id         String   @id @default(cuid())
+  tenantId   String
+  conversaId String
+  modelo     String
+  provider   String
+  iteracoes  Int
+  tokensEntrada     Int
+  tokensSaida       Int
+  tokensCacheLeitura Int @default(0)
+  tokensCacheEscrita Int @default(0)
+  latenciaMs Int
+  /// [{ nome, argumentos, latenciaMs, erro }]
+  ferramentas Json    @default("[]")
+  /// [{ regra, trecho }] — violações de guardrail neste turno.
+  violacoes   Json    @default("[]")
+  criadoEm    DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversa Conversa @relation(fields: [conversaId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, criadoEm])
+  @@map("trace_agente")
+}
